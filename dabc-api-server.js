@@ -12,6 +12,51 @@ var URL_BASE      = 'http://www.webapps.abc.utah.gov/Production',
 	BEER_LIST_URL = '/OnlinePriceList/DisplayPriceList.aspx?DivCd=T',
 	INVENTORY_URL = '/OnlineInventoryQuery/IQ/InventoryQuery.aspx';
 
+server.get('/inventory', function(req, apiResponse, next) {
+
+	request(URL_BASE + BEER_LIST_URL, function(err, res, html) {
+
+		if ( err ) {
+
+			return next(err);
+
+		}
+
+		var inventory = [],
+			colMap = ['description', 'div', 'dept', 'cat', 'size', 'cs_code', 'price', 'status'],
+			$ = cheerio.load(html);
+
+		$('#ctl00_ContentPlaceHolderBody_gvPricelist > tr').each(function(idx, row) {
+
+			var $cols = $(row).find('td');
+
+			if ( $cols.length ) {
+
+				var beer = {};
+
+				$cols.each(function(idx, td) {
+
+					if ( idx in colMap ) {
+
+						beer[colMap[idx]] = $(td).text();
+
+					}
+
+				});
+
+				inventory.push(beer);
+
+			}
+
+		});
+
+		apiResponse.send(inventory);
+
+		next();
+
+	});
+
+});
 
 server.get('/inventory/:cs_code', function(req, apiResponse, next) {
 
