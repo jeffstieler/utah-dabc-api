@@ -60,6 +60,8 @@ server.get('/inventory', function(req, apiResponse, next) {
 
 server.get('/inventory/:cs_code', function(req, apiResponse, next) {
 
+	apiResponse.cache({ 'maxAge': 60 * 60 * 2 });
+
 	var csCode = req.params.cs_code;
 
 	request(URL_BASE + INVENTORY_URL, function(err, res, html) {
