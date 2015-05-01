@@ -175,6 +175,21 @@ function beerInventory(req, apiResponse, next) {
 
 }
 
+function apiVersions(req, apiResponse, next) {
+
+	var versions = {
+		'current_version': '1',
+		'versions': ['1']
+	};
+
+	apiResponse.send(versions);
+
+	next();
+
+}
+
+server.get({ 'path': '/versions', 'version': '1.0.0' }, apiVersions);
+
 server.get({ 'path': '/beers', 'version': '1.0.0' }, allBeers);
 
 server.get({ 'path': '/beers/:cs_code', 'version': '1.0.0' }, beerInventory);
