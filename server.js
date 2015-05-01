@@ -11,6 +11,7 @@ var server = restify.createServer({
 	'version': '1.0.0'
 });
 
+server.pre(restify.pre.sanitizePath());
 server.use(cache.before);
 server.on('after', cache.after);
 
