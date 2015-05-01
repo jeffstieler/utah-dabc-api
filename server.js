@@ -2,13 +2,40 @@ var request = require('request'),
 	restify = require('restify'),
 	cheerio = require('cheerio'),
 	cache = require('restify-cache'),
-	dotenv = require('dotenv');
+	dotenv = require('dotenv'),
+	semver = require('semver');
 
 dotenv.load({ 'silent': true });
 
 var server = restify.createServer({
 	'name': 'Utah DABC API',
-	'version': '1.0.0'
+	'version': '1.0.0',
+	'versions': ['1.0.0']
+});
+
+// allow path based API versioning
+// based on https://stackoverflow.com/a/29706259
+server.pre(function (req, res, next) {
+	var pieces = req.url.replace(/^\/+/, '').split('/'),
+		pathVersion = pieces[0],
+		semVersion = semver.valid(pathVersion);
+
+	// only if you want to use this routes:
+	// /api/v1/resource
+	// /api/v1.0/resource
+	// /api/v1.0.0/resource
+	if (!semVersion) {
+		semVersion = pathVersion.replace(/v(\d{1})\.(\d{1})\.(\d{1})/, '$1.$2.$3');
+		semVersion = semVersion.replace(/v(\d{1})\.(\d{1})/, '$1.$2.0');
+		semVersion = semVersion.replace(/v(\d{1})/, '$1.0.0');
+	}
+
+	if (semver.valid(semVersion) && server.versions.indexOf(semVersion) > -1) {
+		req.url = req.url.replace(pathVersion + '/', '');
+		req.headers['accept-version'] = semVersion;
+	}
+
+	return next();
 });
 
 server.pre(restify.pre.sanitizePath());
