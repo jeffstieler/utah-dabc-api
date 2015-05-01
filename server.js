@@ -64,8 +64,6 @@ function allBeers(req, apiResponse, next) {
 
 }
 
-server.get({ 'path': '/beers', 'version': '1.0.0' }, allBeers);
-
 function beerInventory(req, apiResponse, next) {
 
 	apiResponse.cache({ 'maxAge': 60 * 60 * 2 });
@@ -148,6 +146,8 @@ function beerInventory(req, apiResponse, next) {
 	});
 
 }
+
+server.get({ 'path': '/beers', 'version': '1.0.0' }, allBeers);
 
 server.get({ 'path': '/beers/:cs_code', 'version': '1.0.0' }, beerInventory);
 
