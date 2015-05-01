@@ -18,7 +18,7 @@ var URL_BASE      = 'http://www.webapps.abc.utah.gov/Production',
 	BEER_LIST_URL = '/OnlinePriceList/DisplayPriceList.aspx?DivCd=T',
 	INVENTORY_URL = '/OnlineInventoryQuery/IQ/InventoryQuery.aspx';
 
-server.get('/inventory', function(req, apiResponse, next) {
+function allBeers(req, apiResponse, next) {
 
 	request(URL_BASE + BEER_LIST_URL, function(err, res, html) {
 
@@ -62,7 +62,9 @@ server.get('/inventory', function(req, apiResponse, next) {
 
 	});
 
-});
+}
+
+server.get({ 'path': '/beers', 'version': '1.0.0' }, allBeers );
 
 server.get('/inventory/:cs_code', function(req, apiResponse, next) {
 
