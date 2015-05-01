@@ -9,6 +9,7 @@
     "request": "^2.55.0",
     "cheerio": "^0.19.0",
     "restify-cache": "^0.3.1",
-    "restify": "^3.0.1"
+    "restify": "^3.0.1",
+    "dotenv": "^1.1.0"
   }
 }

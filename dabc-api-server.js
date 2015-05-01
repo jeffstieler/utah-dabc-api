@@ -1,7 +1,10 @@
 var request = require('request'),
 	restify = require('restify'),
 	cheerio = require('cheerio'),
-	cache = require('restify-cache');
+	cache = require('restify-cache'),
+	dotenv = require('dotenv');
+
+dotenv.load({ 'silent': true });
 
 var server = restify.createServer();
 
@@ -141,6 +144,6 @@ server.get('/inventory/:cs_code', function(req, apiResponse, next) {
 
 });
 
-server.listen(8080, function() {
+server.listen(process.env.PORT || 8080, function() {
 	console.log('%s listening at %s', server.name, server.url);
 });
