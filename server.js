@@ -6,7 +6,10 @@ var request = require('request'),
 
 dotenv.load({ 'silent': true });
 
-var server = restify.createServer();
+var server = restify.createServer({
+	'name': 'Utah DABC API',
+	'version': '1.0.0'
+});
 
 server.use(cache.before);
 server.on('after', cache.after);
