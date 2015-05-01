@@ -64,9 +64,9 @@ function allBeers(req, apiResponse, next) {
 
 }
 
-server.get({ 'path': '/beers', 'version': '1.0.0' }, allBeers );
+server.get({ 'path': '/beers', 'version': '1.0.0' }, allBeers);
 
-server.get('/inventory/:cs_code', function(req, apiResponse, next) {
+function beerInventory(req, apiResponse, next) {
 
 	apiResponse.cache({ 'maxAge': 60 * 60 * 2 });
 
@@ -147,7 +147,9 @@ server.get('/inventory/:cs_code', function(req, apiResponse, next) {
 
 	});
 
-});
+}
+
+server.get({ 'path': '/beers/:cs_code', 'version': '1.0.0' }, beerInventory);
 
 server.listen(process.env.PORT || 8080, function() {
 	console.log('%s listening at %s', server.name, server.url);
