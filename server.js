@@ -218,7 +218,12 @@ function apiHelp(req, apiResponse, next) {
 		'path_labeled': '/beers',
 		'request': {
 			'path': {},
-			'query': {},
+			'query': {
+				'fields': {
+					'type': '(string)',
+					'description': 'Optional. Returns specified fields only. Comma-separated list. Example: fields=cs_code,description,price'
+				}
+			},
 			'body': []
 		},
 		'response': {
