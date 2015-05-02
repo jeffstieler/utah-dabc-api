@@ -3,7 +3,8 @@ var request = require('request'),
 	cheerio = require('cheerio'),
 	cache = require('restify-cache'),
 	dotenv = require('dotenv'),
-	semver = require('semver');
+	semver = require('semver'),
+	_ = require('underscore');
 
 dotenv.load({ 'silent': true });
 
@@ -38,6 +39,7 @@ server.pre(function (req, res, next) {
 	return next();
 });
 
+server.use(restify.queryParser());
 server.pre(restify.pre.sanitizePath());
 server.use(cache.before);
 server.on('after', cache.after);
@@ -48,6 +50,25 @@ var URL_BASE      = 'http://www.webapps.abc.utah.gov/Production',
 
 function allBeers(req, apiResponse, next) {
 
+	var colMap = {
+		'description': 0,
+		'div': 1,
+		'dept': 2,
+		'cat': 3,
+		'size': 4,
+		'cs_code': 5,
+		'price': 6,
+		'status': 7
+	};
+
+	if ( req.params.fields ) {
+
+		colMap = _.pick( colMap, req.params.fields.split(',') );
+
+	}
+
+	colMap = _.invert(colMap);
+
 	request(URL_BASE + BEER_LIST_URL, function(err, res, html) {
 
 		if ( err ) {
@@ -57,7 +78,6 @@ function allBeers(req, apiResponse, next) {
 		}
 
 		var inventory = [],
-			colMap = ['description', 'div', 'dept', 'cat', 'size', 'cs_code', 'price', 'status'],
 			$ = cheerio.load(html);
 
 		$('#ctl00_ContentPlaceHolderBody_gvPricelist > tr').each(function(idx, row) {
@@ -96,7 +116,7 @@ function beerInventory(req, apiResponse, next) {
 
 	apiResponse.cache({ 'maxAge': 60 * 60 * 2 });
 
-	var csCode = req.params.cs_code;
+	var cs_code = req.params.cs_code;
 
 	request(URL_BASE + INVENTORY_URL, function(err, res, html) {
 
@@ -121,7 +141,7 @@ function beerInventory(req, apiResponse, next) {
 					'__VIEWSTATE': VIEWSTATE,
 					'__EVENTVALIDATION': EVENTVALIDATION,
 					'__ASYNCPOST': true,
-					'ctl00$ContentPlaceHolderBody$tbCscCode': csCode
+					'ctl00$ContentPlaceHolderBody$tbCscCode': cs_code
 				}
 			},
 			function(err, res, html) {
@@ -139,10 +159,8 @@ function beerInventory(req, apiResponse, next) {
 					'status': $('#ContentPlaceHolderBody_lblStatus').text(),
 					'price': $('#ContentPlaceHolderBody_lblPrice').text(),
 					'description': $('#ContentPlaceHolderBody_lblDesc').text(),
-					'warehouse': {
-						'onOrder': parseInt( $('#ContentPlaceHolderBody_lblWhsOnOrder').text() ),
-						'inventory': parseInt( $('#ContentPlaceHolderBody_lblWhsInv').text() )
-					},
+					'warehouseOnOrder': parseInt( $('#ContentPlaceHolderBody_lblWhsOnOrder').text() ),
+					'warehouseInventory': parseInt( $('#ContentPlaceHolderBody_lblWhsInv').text() ),
 					'stores': []
 				};
 
@@ -174,6 +192,104 @@ function beerInventory(req, apiResponse, next) {
 	});
 
 }
+
+function apiVersions(req, apiResponse, next) {
+
+	var versions = {
+		'current_version': '1',
+		'versions': ['1']
+	};
+
+	apiResponse.send(versions);
+
+	next();
+
+}
+
+function apiHelp(req, apiResponse, next) {
+
+	var endpoints = [];
+
+	endpoints.push({
+		'description': 'Get a list of beers with basic information like name, price, and size.',
+		'method': 'GET',
+		'group': 'beers',
+		'path_format': '/beers',
+		'path_labeled': '/beers',
+		'request': {
+			'path': {},
+			'query': {
+				'fields': {
+					'type': '(string)',
+					'description': 'Optional. Returns specified fields only. Comma-separated list. Example: fields=cs_code,description,price'
+				}
+			},
+			'body': []
+		},
+		'response': {
+			'body': {}
+		}
+	});
+
+	endpoints.push({
+		'description': 'Get store availability of a beer as well as extra information about it.',
+		'method': 'GET',
+		'group': 'beer',
+		'path_format': '/beers/%d',
+		'path_labeled': '/beers/$id',
+		'request': {
+			'path': {
+				'$id': {
+					'type': '(int|string)',
+					'description': 'DABC Beer ID'
+				}
+			},
+			'query': {},
+			'body': []
+		},
+		'response': {
+			'body': {
+				'sku': {
+					'type': '(int|string)',
+					'description': 'Unique beer ID, DABC\'s SKU number.'
+				},
+				'status': {
+					'type': '(string)',
+					'description': 'Beer availability descriptor. (e.g. General Distribution, Special Order, Trial)'
+				},
+				'price': {
+					'type': '(string)',
+					'description': 'Cost per single beer in USD.'
+				},
+				'description': {
+					'type': '(string)',
+					'description': 'Beer name and container size.'
+				},
+				'warehouseOnOrder': {
+					'type': '(int)',
+					'description': 'Quantity on order at the DABC warehouse.'
+				},
+				'warehouseInventory': {
+					'type': '(int)',
+					'description': 'Quantity in stock at the DABC warehouse.'
+				},
+				'stores': {
+					'type': '(array)',
+					'description': 'Stores the beer is in stock at, with quantities.'
+				}
+			}
+		}
+	});
+
+	apiResponse.send(endpoints);
+
+	next();
+
+}
+
+server.get({ 'path': '/help', 'version': '1.0.0' }, apiHelp);
+
+server.get({ 'path': '/versions', 'version': '1.0.0' }, apiVersions);
 
 server.get({ 'path': '/beers', 'version': '1.0.0' }, allBeers);
 
