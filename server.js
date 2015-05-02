@@ -116,7 +116,7 @@ function beerInventory(req, apiResponse, next) {
 
 	apiResponse.cache({ 'maxAge': 60 * 60 * 2 });
 
-	var beerID = req.params.id;
+	var cs_code = req.params.cs_code;
 
 	request(URL_BASE + INVENTORY_URL, function(err, res, html) {
 
@@ -141,7 +141,7 @@ function beerInventory(req, apiResponse, next) {
 					'__VIEWSTATE': VIEWSTATE,
 					'__EVENTVALIDATION': EVENTVALIDATION,
 					'__ASYNCPOST': true,
-					'ctl00$ContentPlaceHolderBody$tbCscCode': beerID
+					'ctl00$ContentPlaceHolderBody$tbCscCode': cs_code
 				}
 			},
 			function(err, res, html) {
@@ -288,7 +288,7 @@ server.get({ 'path': '/versions', 'version': '1.0.0' }, apiVersions);
 
 server.get({ 'path': '/beers', 'version': '1.0.0' }, allBeers);
 
-server.get({ 'path': '/beers/:id', 'version': '1.0.0' }, beerInventory);
+server.get({ 'path': '/beers/:cs_code', 'version': '1.0.0' }, beerInventory);
 
 server.listen(process.env.PORT || 8080, function() {
 	console.log('%s listening at %s', server.name, server.url);
