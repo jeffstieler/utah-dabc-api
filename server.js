@@ -3,7 +3,8 @@ var request = require('request'),
 	cheerio = require('cheerio'),
 	cache = require('restify-cache'),
 	dotenv = require('dotenv'),
-	semver = require('semver');
+	semver = require('semver'),
+	_ = require('underscore');
 
 dotenv.load({ 'silent': true });
 
@@ -38,6 +39,7 @@ server.pre(function (req, res, next) {
 	return next();
 });
 
+server.use(restify.queryParser());
 server.pre(restify.pre.sanitizePath());
 server.use(cache.before);
 server.on('after', cache.after);
@@ -48,6 +50,25 @@ var URL_BASE      = 'http://www.webapps.abc.utah.gov/Production',
 
 function allBeers(req, apiResponse, next) {
 
+	var colMap = {
+		'description': 0,
+		'div': 1,
+		'dept': 2,
+		'cat': 3,
+		'size': 4,
+		'cs_code': 5,
+		'price': 6,
+		'status': 7
+	};
+
+	if ( req.params.fields ) {
+
+		colMap = _.pick( colMap, req.params.fields.split(',') );
+
+	}
+
+	colMap = _.invert(colMap);
+
 	request(URL_BASE + BEER_LIST_URL, function(err, res, html) {
 
 		if ( err ) {
@@ -57,7 +78,6 @@ function allBeers(req, apiResponse, next) {
 		}
 
 		var inventory = [],
-			colMap = ['description', 'div', 'dept', 'cat', 'size', 'cs_code', 'price', 'status'],
 			$ = cheerio.load(html);
 
 		$('#ctl00_ContentPlaceHolderBody_gvPricelist > tr').each(function(idx, row) {
