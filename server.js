@@ -191,6 +191,22 @@ function apiHelp(req, apiResponse, next) {
 	var endpoints = [];
 
 	endpoints.push({
+		'description': 'Get a list of beers with basic information like name, price, and size.',
+		'method': 'GET',
+		'group': 'beers',
+		'path_format': '/beers',
+		'path_labeled': '/beers',
+		'request': {
+			'path': {},
+			'query': {},
+			'body': []
+		},
+		'response': {
+			'body': {}
+		}
+	});
+
+	endpoints.push({
 		'description': 'Get store availability of a beer as well as extra information about it.',
 		'method': 'GET',
 		'group': 'beer',
