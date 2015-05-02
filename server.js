@@ -96,7 +96,7 @@ function beerInventory(req, apiResponse, next) {
 
 	apiResponse.cache({ 'maxAge': 60 * 60 * 2 });
 
-	var csCode = req.params.cs_code;
+	var beerID = req.params.id;
 
 	request(URL_BASE + INVENTORY_URL, function(err, res, html) {
 
@@ -121,7 +121,7 @@ function beerInventory(req, apiResponse, next) {
 					'__VIEWSTATE': VIEWSTATE,
 					'__EVENTVALIDATION': EVENTVALIDATION,
 					'__ASYNCPOST': true,
-					'ctl00$ContentPlaceHolderBody$tbCscCode': csCode
+					'ctl00$ContentPlaceHolderBody$tbCscCode': beerID
 				}
 			},
 			function(err, res, html) {
@@ -139,10 +139,8 @@ function beerInventory(req, apiResponse, next) {
 					'status': $('#ContentPlaceHolderBody_lblStatus').text(),
 					'price': $('#ContentPlaceHolderBody_lblPrice').text(),
 					'description': $('#ContentPlaceHolderBody_lblDesc').text(),
-					'warehouse': {
-						'onOrder': parseInt( $('#ContentPlaceHolderBody_lblWhsOnOrder').text() ),
-						'inventory': parseInt( $('#ContentPlaceHolderBody_lblWhsInv').text() )
-					},
+					'warehouseOnOrder': parseInt( $('#ContentPlaceHolderBody_lblWhsOnOrder').text() ),
+					'warehouseInventory': parseInt( $('#ContentPlaceHolderBody_lblWhsInv').text() ),
 					'stores': []
 				};
 
@@ -254,7 +252,7 @@ server.get({ 'path': '/versions', 'version': '1.0.0' }, apiVersions);
 
 server.get({ 'path': '/beers', 'version': '1.0.0' }, allBeers);
 
-server.get({ 'path': '/beers/:cs_code', 'version': '1.0.0' }, beerInventory);
+server.get({ 'path': '/beers/:id', 'version': '1.0.0' }, beerInventory);
 
 server.listen(process.env.PORT || 8080, function() {
 	console.log('%s listening at %s', server.name, server.url);
