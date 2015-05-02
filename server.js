@@ -39,6 +39,7 @@ server.pre(function (req, res, next) {
 	return next();
 });
 
+server.use(restify.CORS());
 server.use(restify.queryParser());
 server.pre(restify.pre.sanitizePath());
 server.use(cache.before);
