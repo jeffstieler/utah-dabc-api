@@ -88,25 +88,55 @@ Beer.sync().then(function(){
 	});
 });
 
+function loadBeers() {
+
+	var beers = require('./beers.json');
+
+	beers = beers.map(function(beer) {
+
+		beer['csCode'] = beer['cs_code'];
+
+		delete( beer['cs_code'] );
+
+		return beer;
+
+	});
+
+	Beer.bulkCreate(beers).then(function(beers){
+		console.log('created ' + beers.length + ' beers in bulk');
+		setInventory();
+	});
+
+}
+
+function setInventory() {
+
+	var beerInventory = require('./904164.json');
+
+	Beer.find({ 'where': { 'csCode':beerInventory.sku } } ).then(function(beer){
+
+		beerInventory.stores.forEach(function(storeInfo){
+
+			Store.create({
+				'number': storeInfo.store,
+				'address1': storeInfo.address,
+				'city': storeInfo.city,
+				'phoneNumber': storeInfo.phone
+			}).then(function(store){
+				beer.addStore(store, {'quantity': storeInfo.qty});
+			});
+
+		});
+
+	});
+
+}
+
 function startApp() {
 
 	console.log('app start here');
 
-	var beers = require('./beers.json');
+	loadBeers();
 
-	for ( var idx in beers ) {
-
-		var beerData = beers[idx];
-
-		beerData['csCode'] = beerData['cs_code'];
-
-		delete( beerData['cs_code'] );
-
-		Beer.create(beerData).then(function(beer){
-			console.log('created beer: ', beer.description);
-		});
-
-	}
-
-
+	setInventory();
 }
