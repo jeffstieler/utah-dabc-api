@@ -92,5 +92,21 @@ function startApp() {
 
 	console.log('app start here');
 
+	var beers = require('./beers.json');
+
+	for ( var idx in beers ) {
+
+		var beerData = beers[idx];
+
+		beerData['csCode'] = beerData['cs_code'];
+
+		delete( beerData['cs_code'] );
+
+		Beer.create(beerData).then(function(beer){
+			console.log('created beer: ', beer.description);
+		});
+
+	}
+
 
 }
