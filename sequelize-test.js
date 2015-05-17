@@ -174,8 +174,28 @@ function startApp() {
 
 	console.log('app start here');
 
-	loadBeers();
+	// loadBeers();
 
-	setInventory();
+	// setInventory();
+
+	Store.find({
+	'where': {
+		'number': '0038'
+	}
+	}).then(function(store){
+
+		console.log(store.get({plain:true}));
+
+		store.getBeers({'order': [['description', 'ASC']]}).then(function(storeBeers) {
+
+			console.log(storeBeers.map(function(beer){
+				beer = beer.get({plain:true});
+
+				return beer.description + ' - ' + beer.StoreInventory.quantity;
+			}));
+
+		});
+
+	});
 
 }
