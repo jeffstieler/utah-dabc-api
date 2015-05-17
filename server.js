@@ -201,9 +201,9 @@ server.get({ 'path': '/help', 'version': '1.0.0' }, routes.meta.apiHelp);
 
 server.get({ 'path': '/versions', 'version': '1.0.0' }, routes.meta.apiVersions);
 
-server.get({ 'path': '/beers', 'version': '1.0.0' }, allBeers);
+server.get({ 'path': '/beers', 'version': '1.0.0' }, routes.beer.all);
 
-server.get({ 'path': '/beers/:cs_code', 'version': '1.0.0' }, beerInventory);
+server.get({ 'path': '/beers/:csCode', 'version': '1.0.0' }, routes.beer.one);
 
 db.sequelize.sync().then(function() {
 	server.listen(process.env.PORT || 8080, function() {
