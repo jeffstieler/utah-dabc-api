@@ -1,89 +1,9 @@
-var Sequelize = require('sequelize'),
-	request = require('request'),
-	async = require('async');
-
-Sequelize.Promise.onPossiblyUnhandledRejection(function(e) {
-    console.log(e);
-    throw e;
-    process.exit(1);
-});
-
-var sequelize = new Sequelize(
-	'sequelize_test',
-	'_root',
-	'spam32',
-	{
-		'host': '192.168.33.10',
-		'dialect': 'mysql'
-	}
-);
-
-var Beer = sequelize.define('beer', {
-	'description': {
-		'type': Sequelize.STRING
-	},
-	'div': {
-		'type': Sequelize.STRING
-	},
-	'dept': {
-		'type': Sequelize.STRING
-	},
-	'cat': {
-		'type': Sequelize.STRING
-	},
-	'size': {
-		'type': Sequelize.STRING
-	},
-	'csCode': {
-		'type': Sequelize.STRING,
-		'field': 'cs_code'
-	},
-	'price': {
-		'type': Sequelize.STRING
-	},
-	'status': {
-		'type': Sequelize.STRING
-	}
-});
-
-var Store = sequelize.define('store', {
-	'number': {
-		'type': Sequelize.STRING
-	},
-	'city': {
-		'type': Sequelize.STRING
-	},
-	'googleZoom': {
-		'type': Sequelize.STRING,
-		'field': 'google_zoom'
-	},
-	'address1': {
-		'type': Sequelize.STRING,
-		'field': 'address_1'
-	},
-	'address2': {
-		'type': Sequelize.STRING,
-		'field': 'address_2'
-	},
-	'phoneNumber': {
-		'type': Sequelize.STRING,
-		'field': 'phone_number'
-	},
-	'latitude': {
-		'type': Sequelize.STRING
-	},
-	'longitude': {
-		'type': Sequelize.STRING
-	}
-});
-
-var StoreInventory = sequelize.define('StoreInventory', {
-	'quantity': Sequelize.INTEGER
-});
-
-Beer.belongsToMany(Store, {'through': 'StoreInventory'});
-
-Store.belongsToMany(Beer, {'through': 'StoreInventory'});
+var request = require('request'),
+	async = require('async'),
+	db = require('./models'),
+	Beer = db.models.Beer,
+	Store = db.models.Store,
+	StoreInventory = db.models.StoreInventory;
 
 Beer.sync().then(function(){
 	console.log('beer model synced');
