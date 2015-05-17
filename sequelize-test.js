@@ -5,16 +5,7 @@ var request = require('request'),
 	Store = db.models.Store,
 	StoreInventory = db.models.StoreInventory;
 
-Beer.sync().then(function(){
-	console.log('beer model synced');
-	Store.sync().then(function(){
-		console.log('store model synced');
-		StoreInventory.sync().then(function(){
-			console.log('storeinventory synced');
-			startApp();
-		})
-	});
-});
+db.sequelize.sync().then(startApp);
 
 function loadBeers() {
 
