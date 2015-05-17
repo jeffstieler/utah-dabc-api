@@ -4,7 +4,8 @@ var request = require('request'),
 	cache = require('restify-cache'),
 	dotenv = require('dotenv'),
 	semver = require('semver'),
-	_ = require('underscore');
+	_ = require('underscore'),
+	db = require('./models');
 
 dotenv.load({ 'silent': true });
 
@@ -204,6 +205,8 @@ server.get({ 'path': '/beers', 'version': '1.0.0' }, allBeers);
 
 server.get({ 'path': '/beers/:cs_code', 'version': '1.0.0' }, beerInventory);
 
-server.listen(process.env.PORT || 8080, function() {
-	console.log('%s listening at %s', server.name, server.url);
+db.sequelize.sync().then(function() {
+	server.listen(process.env.PORT || 8080, function() {
+		console.log('%s listening at %s', server.name, server.url);
+	});
 });
