@@ -1,4 +1,12 @@
-var Sequelize = require('sequelize');
+var Sequelize = require('sequelize'),
+	request = require('request'),
+	async = require('async');
+
+Sequelize.Promise.onPossiblyUnhandledRejection(function(e) {
+    console.log(e);
+    throw e;
+    process.exit(1);
+});
 
 var sequelize = new Sequelize(
 	'sequelize_test',
@@ -111,22 +119,52 @@ function loadBeers() {
 
 function setInventory() {
 
-	var beerInventory = require('./904164.json');
+	Beer.all().then(function(beers) {
 
-	Beer.find({ 'where': { 'csCode':beerInventory.sku } } ).then(function(beer){
+		async.eachLimit(
+			beers,
+			5,
+			function(beer, next) {
 
-		beerInventory.stores.forEach(function(storeInfo){
+				var beerData = beer.get({
+					'plain': true
+				});
 
-			Store.create({
-				'number': storeInfo.store,
-				'address1': storeInfo.address,
-				'city': storeInfo.city,
-				'phoneNumber': storeInfo.phone
-			}).then(function(store){
-				beer.addStore(store, {'quantity': storeInfo.qty});
-			});
+				request({
+					'url': 'http://jeffstieler.com/utah-dabc-api/beers/' + beerData.csCode,
+					'json': true
+				}, function(err, res, data) {
 
-		});
+					if (err) return next(err);
+
+					async.each(data.stores, function(storeInfo, cb) {
+
+						Store.findOrCreate({
+							'where': {
+								'number': storeInfo.store
+							},
+							'defaults': {
+								'number': storeInfo.store,
+								'address1': storeInfo.address,
+								'city': storeInfo.city,
+								'phoneNumber': storeInfo.phone
+							}
+						}).spread(function(store, created) {
+							beer.addStore(store, {'quantity': storeInfo.qty});
+							cb();
+						});
+
+					}, next);
+
+				});
+
+			},
+			function(err) {
+
+				console.log('done w/beer inventory:', err);
+
+			}
+		);
 
 	});
 
@@ -139,4 +177,5 @@ function startApp() {
 	loadBeers();
 
 	setInventory();
+
 }
