@@ -1,11 +1,19 @@
 {
-  "name": "dabc-api-server",
-  "version": "0.1.0",
-  "description": "API for Utah DABC Inventory",
-  "main": "dabc-api-server.js",
-  "author": "Jeff Stieler <jeff.m.stieler@gmail.com>",
-  "license": "MIT",
+  "name": "utah-dabc-api",
+  "version": "1.0.0",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node .",
+    "pretest": "jshint ."
+  },
   "dependencies": {
+    "compression": "^1.0.3",
+    "cors": "^2.5.2",
+    "loopback": "^2.22.0",
+    "loopback-boot": "^2.6.5",
+    "loopback-component-explorer": "^2.1.0",
+    "loopback-datasource-juggler": "^2.39.0",
+    "serve-favicon": "^2.0.1",
     "async": "^1.5.0",
     "cheerio": "^0.19.0",
     "dotenv": "^1.1.0",
@@ -14,5 +22,15 @@
     "restify-cache": "^0.3.1",
     "semver": "^4.3.3",
     "underscore": "^1.8.3"
-  }
+  },
+  "devDependencies": {
+    "jshint": "^2.5.6"
+  },
+  "repository": {
+    "type": "",
+    "url": ""
+  },
+  "description": "API for Utah DABC Inventory",
+  "author": "Jeff Stieler <jeff.m.stieler@gmail.com>",
+  "license": "MIT"
 }
