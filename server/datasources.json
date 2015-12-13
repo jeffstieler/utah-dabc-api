@@ -2,5 +2,15 @@
   "db": {
     "name": "db",
     "connector": "memory"
+  },
+  "MySQL": {
+    "host": "localhost",
+    "port": 3306,
+    "url": "",
+    "database": "utah-dabc-api",
+    "password": "spam3232",
+    "name": "MySQL",
+    "connector": "mysql",
+    "user": "loopback"
   }
 }

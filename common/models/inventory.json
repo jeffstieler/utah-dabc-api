@@ -1,0 +1,26 @@
+{
+  "name": "Inventory",
+  "base": "PersistedModel",
+  "strict": false,
+  "idInjection": false,
+  "options": {
+    "validateUpsert": true
+  },
+  "properties": {
+    "quantity": {
+      "type": "number"
+    },
+    "itemSku": {
+      "type": "string",
+      "comments": "Item.sku"
+    },
+    "storeNumber": {
+      "type": "number",
+      "comments": "Store.number"
+    }
+  },
+  "validations": [],
+  "relations": {},
+  "acls": [],
+  "methods": {}
+}

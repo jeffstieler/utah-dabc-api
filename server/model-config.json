@@ -31,5 +31,23 @@
   "Role": {
     "dataSource": "db",
     "public": false
+  },
+  "Item": {
+    "dataSource": "MySQL",
+    "public": true,
+    "$promise": {},
+    "$resolved": true
+  },
+  "Store": {
+    "dataSource": "MySQL",
+    "public": true,
+    "$promise": {},
+    "$resolved": true
+  },
+  "Inventory": {
+    "dataSource": "MySQL",
+    "public": true,
+    "$promise": {},
+    "$resolved": true
   }
 }

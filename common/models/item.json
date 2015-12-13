@@ -1,0 +1,32 @@
+{
+  "name": "Item",
+  "base": "PersistedModel",
+  "strict": false,
+  "idInjection": false,
+  "options": {
+    "validateUpsert": true
+  },
+  "properties": {
+    "description": {
+      "type": "string",
+      "comments": "\"GLENMORANGIE PRIDE 35 YO 1000ml\t\""
+    },
+    "volume": {
+      "type": "number",
+      "comments": "Volume in ml"
+    },
+    "price": {
+      "type": "number",
+      "comments": "Price in US Dollars"
+    },
+    "sku": {
+      "type": "string",
+      "id": true,
+      "comments": "SKU (used as ID)"
+    }
+  },
+  "validations": [],
+  "relations": {},
+  "acls": [],
+  "methods": {}
+}
