@@ -6,11 +6,12 @@
   "author": "Jeff Stieler <jeff.m.stieler@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "request": "^2.55.0",
+    "async": "^1.5.0",
     "cheerio": "^0.19.0",
-    "restify-cache": "^0.3.1",
-    "restify": "^3.0.1",
     "dotenv": "^1.1.0",
+    "request": "^2.55.0",
+    "restify": "^3.0.1",
+    "restify-cache": "^0.3.1",
     "semver": "^4.3.3",
     "underscore": "^1.8.3"
   }

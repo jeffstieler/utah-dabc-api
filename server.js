@@ -4,7 +4,8 @@ var request = require('request'),
 	cache = require('restify-cache'),
 	dotenv = require('dotenv'),
 	semver = require('semver'),
-	_ = require('underscore');
+	_ = require('underscore'),
+	async = require('async');
 
 dotenv.load({ 'silent': true });
 
@@ -45,9 +46,43 @@ server.pre(restify.pre.sanitizePath());
 server.use(cache.before);
 server.on('after', cache.after);
 
-var URL_BASE      = 'http://www.webapps.abc.utah.gov/Production',
-	BEER_LIST_URL = '/OnlinePriceList/DisplayPriceList.aspx?DivCd=T',
-	INVENTORY_URL = '/OnlineInventoryQuery/IQ/InventoryQuery.aspx';
+var URL_BASE               = 'http://www.webapps.abc.utah.gov/Production',
+	BEER_LIST_URL          = '/OnlinePriceList/DisplayPriceList.aspx?DivCd=T',
+	SPECIAL_ORDER_LIST_URL = '/OnlinePriceList/DisplayPriceList.aspx?ClassCd=YST',
+	INVENTORY_URL          = '/OnlineInventoryQuery/IQ/InventoryQuery.aspx';
+
+function parseBeerTable(colMap, html) {
+
+	var inventory = [],
+		$ = cheerio.load(html);
+
+	$('#ctl00_ContentPlaceHolderBody_gvPricelist > tr').each(function(idx, row) {
+
+		var $cols = $(row).find('td');
+
+		if ( $cols.length ) {
+
+			var beer = {};
+
+			$cols.each(function(idx, td) {
+
+				if ( idx in colMap ) {
+
+					beer[colMap[idx]] = $(td).text();
+
+				}
+
+			});
+
+			inventory.push(beer);
+
+		}
+
+	});
+
+	return inventory;
+
+}
 
 function allBeers(req, apiResponse, next) {
 
@@ -70,46 +105,34 @@ function allBeers(req, apiResponse, next) {
 
 	colMap = _.invert(colMap);
 
-	request(URL_BASE + BEER_LIST_URL, function(err, res, html) {
+	async.concat(
+		[
+			URL_BASE + BEER_LIST_URL,
+			URL_BASE + SPECIAL_ORDER_LIST_URL
+		],
+		function(url, cb) {
 
-		if ( err ) {
+			request(url, function(err, res, html) {
 
-			return next(err);
+				if (err) return cb(err);
+
+				var inventory = parseBeerTable(colMap, html);
+
+				cb(null, inventory);
+
+			});
+
+		},
+		function(err, inventory) {
+
+			if (err) return next(err);
+
+			apiResponse.send(inventory);
+
+			next();
 
 		}
-
-		var inventory = [],
-			$ = cheerio.load(html);
-
-		$('#ctl00_ContentPlaceHolderBody_gvPricelist > tr').each(function(idx, row) {
-
-			var $cols = $(row).find('td');
-
-			if ( $cols.length ) {
-
-				var beer = {};
-
-				$cols.each(function(idx, td) {
-
-					if ( idx in colMap ) {
-
-						beer[colMap[idx]] = $(td).text();
-
-					}
-
-				});
-
-				inventory.push(beer);
-
-			}
-
-		});
-
-		apiResponse.send(inventory);
-
-		next();
-
-	});
+	);
 
 }
 
