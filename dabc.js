@@ -6,7 +6,8 @@ var	request = require('request'),
 var	URL_BASE               = 'http://www.webapps.abc.utah.gov/Production',
 	BEER_LIST_URL          = '/OnlinePriceList/DisplayPriceList.aspx?DivCd=T',
 	SPECIAL_ORDER_LIST_URL = '/OnlinePriceList/DisplayPriceList.aspx?ClassCd=YST',
-	INVENTORY_URL          = '/OnlineInventoryQuery/IQ/InventoryQuery.aspx';
+	INVENTORY_URL          = '/OnlineInventoryQuery/IQ/InventoryQuery.aspx',
+	STORE_MAP_URL          = 'http://abc.utah.gov/common/script/abcMap.js';
 
 var colMap = [
 	'description',
@@ -152,7 +153,40 @@ function getBeerInventory( csCode, callback ) {
 
 }
 
+function getAllStores( callback ) {
+
+	request( STORE_MAP_URL, function( err, res, mapJs ) {
+
+		if ( err ) {
+
+			return callback( err );
+
+		}
+
+		var storePattern = /^locations\.push\(({.+})\);/mg;
+
+		var matches = mapJs.match( storePattern );
+
+		var stores = matches.map( function( storeMatch ) {
+
+			var storeJSON = storeMatch.substring( 15, ( storeMatch.length - 2 ) );
+
+			storeJSON = storeJSON.replace( / ([a-zA-Z][\w\d]*):/g, ' "$1":' );
+
+			storeJSON = storeJSON.replace( /'/g, '"' );
+
+			return JSON.parse( storeJSON );
+
+		} );
+
+		callback( null, stores );
+
+	} );
+
+}
+
 module.exports = {
 	getAllBeers: getAllBeers,
-	getBeerInventory: getBeerInventory
+	getBeerInventory: getBeerInventory,
+	getAllStores: getAllStores
 };
