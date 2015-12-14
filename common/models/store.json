@@ -28,7 +28,14 @@
     }
   },
   "validations": [],
-  "relations": {},
+  "relations": {
+    "items": {
+      "type": "hasMany",
+      "model": "Item",
+      "foreignKey": "storeNumber",
+      "through": "Inventory"
+    }
+  },
   "acls": [],
   "methods": {}
 }
