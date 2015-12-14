@@ -5,7 +5,8 @@ var request = require('request'),
 	dotenv = require('dotenv'),
 	semver = require('semver'),
 	_ = require('underscore'),
-	async = require('async');
+	async = require('async'),
+	DABC = require('./dabc.js');
 
 dotenv.load({ 'silent': true });
 
@@ -47,92 +48,19 @@ server.use(cache.before);
 server.on('after', cache.after);
 
 var URL_BASE               = 'http://www.webapps.abc.utah.gov/Production',
-	BEER_LIST_URL          = '/OnlinePriceList/DisplayPriceList.aspx?DivCd=T',
-	SPECIAL_ORDER_LIST_URL = '/OnlinePriceList/DisplayPriceList.aspx?ClassCd=YST',
 	INVENTORY_URL          = '/OnlineInventoryQuery/IQ/InventoryQuery.aspx';
 
-function parseBeerTable(colMap, html) {
+function allBeers( req, apiResponse, next ) {
 
-	var inventory = [],
-		$ = cheerio.load(html);
+	DABC.getAllBeers( function( err, beers ) {
 
-	$('#ctl00_ContentPlaceHolderBody_gvPricelist > tr').each(function(idx, row) {
+		if ( err ) return next( err );
 
-		var $cols = $(row).find('td');
+		apiResponse.send( beers );
 
-		if ( $cols.length ) {
+		next();
 
-			var beer = {};
-
-			$cols.each(function(idx, td) {
-
-				if ( idx in colMap ) {
-
-					beer[colMap[idx]] = $(td).text();
-
-				}
-
-			});
-
-			inventory.push(beer);
-
-		}
-
-	});
-
-	return inventory;
-
-}
-
-function allBeers(req, apiResponse, next) {
-
-	var colMap = {
-		'description': 0,
-		'div': 1,
-		'dept': 2,
-		'cat': 3,
-		'size': 4,
-		'cs_code': 5,
-		'price': 6,
-		'status': 7
-	};
-
-	if ( req.params.fields ) {
-
-		colMap = _.pick( colMap, req.params.fields.split(',') );
-
-	}
-
-	colMap = _.invert(colMap);
-
-	async.concat(
-		[
-			URL_BASE + BEER_LIST_URL,
-			URL_BASE + SPECIAL_ORDER_LIST_URL
-		],
-		function(url, cb) {
-
-			request(url, function(err, res, html) {
-
-				if (err) return cb(err);
-
-				var inventory = parseBeerTable(colMap, html);
-
-				cb(null, inventory);
-
-			});
-
-		},
-		function(err, inventory) {
-
-			if (err) return next(err);
-
-			apiResponse.send(inventory);
-
-			next();
-
-		}
-	);
+	} );
 
 }
 
