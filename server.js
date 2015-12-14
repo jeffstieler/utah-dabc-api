@@ -47,9 +47,6 @@ server.pre(restify.pre.sanitizePath());
 server.use(cache.before);
 server.on('after', cache.after);
 
-var URL_BASE               = 'http://www.webapps.abc.utah.gov/Production',
-	INVENTORY_URL          = '/OnlineInventoryQuery/IQ/InventoryQuery.aspx';
-
 function allBeers( req, apiResponse, next ) {
 
 	DABC.getAllBeers( function( err, beers ) {
@@ -64,84 +61,23 @@ function allBeers( req, apiResponse, next ) {
 
 }
 
-function beerInventory(req, apiResponse, next) {
+function beerInventory( req, apiResponse, next ) {
 
-	apiResponse.cache({ 'maxAge': 60 * 60 * 2 });
+	apiResponse.cache( {
+		'maxAge': 60 * 60 * 2
+	} );
 
-	var cs_code = req.params.cs_code;
+	var csCode = req.params.cs_code;
 
-	request(URL_BASE + INVENTORY_URL, function(err, res, html) {
+	DABC.getBeerInventory( csCode, function( err, inventory ) {
 
-		if ( err ) {
-		
-			return next(err);
-		
-		}
+		if ( err ) return next( err );
 
-		var $ = cheerio.load(html);
+		apiResponse.send( inventory );
 
-		var VIEWSTATE = $('#__VIEWSTATE').val(),
-			EVENTVALIDATION = $('#__EVENTVALIDATION').val();
+		next();
 
-		request.post(
-			URL_BASE + INVENTORY_URL,
-			{
-				'headers': {
-					'User-Agent': 'Mozilla'
-				},
-				'form': {
-					'__VIEWSTATE': VIEWSTATE,
-					'__EVENTVALIDATION': EVENTVALIDATION,
-					'__ASYNCPOST': true,
-					'ctl00$ContentPlaceHolderBody$tbCscCode': cs_code
-				}
-			},
-			function(err, res, html) {
-
-				if ( err ) {
-
-					return next(err);
-
-				}
-
-				var $ = cheerio.load(html);
-
-				var inventory = {
-					'sku': $('#ContentPlaceHolderBody_lblSku').text(),
-					'status': $('#ContentPlaceHolderBody_lblStatus').text(),
-					'price': $('#ContentPlaceHolderBody_lblPrice').text(),
-					'description': $('#ContentPlaceHolderBody_lblDesc').text(),
-					'warehouseOnOrder': parseInt( $('#ContentPlaceHolderBody_lblWhsOnOrder').text() ),
-					'warehouseInventory': parseInt( $('#ContentPlaceHolderBody_lblWhsInv').text() ),
-					'stores': []
-				};
-
-				var colMap = ['store', 'name', 'qty', 'address', 'city', 'phone'];
-
-				$('#ContentPlaceHolderBody_gvInventoryDetails tr.gridViewRow').each(function(idx, row) {
-
-					var store = {};
-
-					$(row).find('td').each(function(idx, td) {
-
-						store[colMap[idx]] = $(td).text();
-
-					});
-
-					store.qty = parseInt(store.qty);
-
-					inventory.stores.push(store);
-
-				});
-
-				apiResponse.send(inventory);
-
-				next();
-
-			}
-		);
-
-	});
+	} );
 
 }
 

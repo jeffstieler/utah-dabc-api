@@ -77,6 +77,82 @@ function getAllBeers( callback ) {
 
 }
 
+function getBeerInventory( csCode, callback ) {
+
+	request( URL_BASE + INVENTORY_URL, function( err, res, html ) {
+
+		if ( err ) {
+
+			return callback( err );
+
+		}
+
+		var	$ = cheerio.load( html ),
+			VIEWSTATE = $( '#__VIEWSTATE' ).val(),
+			EVENTVALIDATION = $( '#__EVENTVALIDATION' ).val();
+
+		request.post(
+			URL_BASE + INVENTORY_URL,
+			{
+				'headers' : {
+					'User-Agent' : 'Mozilla'
+				},
+				'form'    : {
+					'__VIEWSTATE'                            : VIEWSTATE,
+					'__EVENTVALIDATION'                      : EVENTVALIDATION,
+					'__ASYNCPOST'                            : true,
+					'ctl00$ContentPlaceHolderBody$tbCscCode' : csCode
+				}
+			},
+			function( err, res, html ) {
+
+				if ( err ) {
+
+					return callback( err );
+
+				}
+
+				var $ = cheerio.load( html );
+
+				var inventory = {
+					'sku'                : $( '#ContentPlaceHolderBody_lblSku' ).text(),
+					'status'             : $( '#ContentPlaceHolderBody_lblStatus' ).text(),
+					'price'              : $( '#ContentPlaceHolderBody_lblPrice' ).text(),
+					'description'        : $( '#ContentPlaceHolderBody_lblDesc' ).text(),
+					'warehouseOnOrder'   : parseInt( $( '#ContentPlaceHolderBody_lblWhsOnOrder' ).text() ),
+					'warehouseInventory' : parseInt( $( '#ContentPlaceHolderBody_lblWhsInv' ).text() ),
+					'stores'             : []
+				};
+
+				var colMap = [ 'store', 'name', 'qty', 'address', 'city', 'phone' ];
+
+				$( '#ContentPlaceHolderBody_gvInventoryDetails tr.gridViewRow' ).each( function( idx, row ) {
+
+					var store = {};
+
+					$( row ).find( 'td' ).each( function( idx, td ) {
+
+						store[ colMap[ idx ] ] = $( td ).text();
+
+					} );
+
+					store.qty = parseInt( store.qty );
+
+					inventory.stores.push( store );
+
+				} );
+
+				callback( null, inventory );
+
+			}
+
+		);
+
+	} );
+
+}
+
 module.exports = {
-	getAllBeers: getAllBeers
+	getAllBeers: getAllBeers,
+	getBeerInventory: getBeerInventory
 };
