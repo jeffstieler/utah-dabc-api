@@ -18,7 +18,7 @@ function syncStores( syncStoresCallback ) {
 					return findOrCreateCallback();
 				}
 
-				console.log( 'Syncing Store ' + store.storeNumber, typeof store.storeNumber );
+				console.log( 'Syncing Store ' + store.storeNumber );
 
 				var storeToCreate = {
 					number: store.storeNumber,
@@ -58,10 +58,59 @@ function syncStores( syncStoresCallback ) {
 
 }
 
+function syncItems( syncItemsCallback ) {
+
+	DABC.getAllBeers( function( err, items ) {
+
+		if ( err ) {
+			return syncItemsCallback( err );
+		}
+
+		async.each(
+			items,
+			function findOrCreateItem( item, findOrCreateCallback ) {
+				console.log( 'Syncing Item ' + item.cs_code + ': ' + item.description );
+
+				var itemToCreate = {
+					sku: item.cs_code,
+					price: item.price,
+					volume: item.size,
+					description: item.description
+				};
+
+				models.Item.findOrCreate(
+					{
+						where: {
+							sku: item.cs_code
+						}
+					},
+					itemToCreate,
+					function( err, instance, created ) {
+						if ( err ) {
+							return findOrCreateCallback( err );
+						} else {
+							if ( created ) {
+								console.log( 'Created Item ' + instance.sku + '.' );
+							}
+							else {
+								console.log( 'Item ' + instance.sku + ' already exists.' );
+							}
+							return findOrCreateCallback();
+						}
+					}
+				);
+			}
+		);
+
+	} );
+
+}
+
 // Kick off sync of all stores, beers, and inventory
 async.waterfall(
 	[
-		syncStores
+		syncStores,
+		syncItems
 	],
 	function finishedSync( err ) {
 		if ( err ) {
