@@ -2,12 +2,15 @@ var	models = require('./server/server.js').models,
 	DABC = require('./dabc.js'),
 	async = require('async');
 
-function syncStores( syncStoresCallback ) {
+var	allStores = {},
+	allItems = {};
+
+function syncStores( syncCallback ) {
 
 	DABC.getAllStores( function( err, stores ) {
 
 		if ( err ) {
-			return syncStoresCallback( err );
+			return syncCallback( err );
 		}
 
 		async.each(
@@ -39,6 +42,9 @@ function syncStores( syncStoresCallback ) {
 						if ( err ) {
 							return findOrCreateCallback( err );
 						} else {
+							// cache the instance
+							allStores[ instance.number ] = instance;
+
 							if ( created ) {
 								console.log( 'Created Store ' + instance.number + '.' );
 							}
@@ -51,19 +57,19 @@ function syncStores( syncStoresCallback ) {
 				);
 
 			},
-			syncStoresCallback
+			syncCallback
 		);
 
 	} );
 
 }
 
-function syncItems( syncItemsCallback ) {
+function syncItems( syncCallback ) {
 
 	DABC.getAllBeers( function( err, items ) {
 
 		if ( err ) {
-			return syncItemsCallback( err );
+			return syncCallback( err );
 		}
 
 		async.each(
@@ -89,6 +95,9 @@ function syncItems( syncItemsCallback ) {
 						if ( err ) {
 							return findOrCreateCallback( err );
 						} else {
+							// cache the instance
+							allItems[ instance.sku ] = instance;
+
 							if ( created ) {
 								console.log( 'Created Item ' + instance.sku + '.' );
 							}
@@ -99,10 +108,91 @@ function syncItems( syncItemsCallback ) {
 						}
 					}
 				);
-			}
+			},
+			syncCallback
 		);
 
 	} );
+
+}
+
+function syncInventory( syncCallback ) {
+
+	async.eachLimit(
+		allItems,
+		5,
+		function syncItemInventory( item, itemSyncCallback ) {
+
+			DABC.getBeerInventory( item.sku, function( err, inventory ) {
+
+				if ( err ) {
+					return itemSyncCallback( err );
+				}
+
+				async.each(
+					inventory.stores,
+					function findOrCreateInventory( store, findOrCreateCallback ) {
+
+						var storeNumber = store.store.replace(/^0+/, '');
+
+						if ( ! allStores[ storeNumber ] ) {
+							return itemSyncCallback( 'Could not find instance for Store ' + storeNumber );
+						}
+
+						var inventoryToCreate = {
+							itemSku: item.sku,
+							storeNumber: storeNumber,
+							quantity: store.qty
+						};
+
+						models.Inventory.findOrCreate(
+							{
+								where: {
+									and: [
+										{
+											itemSku: item.sku
+										},
+										{
+											storeNumber: storeNumber
+										}
+									]
+								}
+							},
+							inventoryToCreate,
+							function( err, instance, created ) {
+								if ( err ) {
+									return findOrCreateCallback( err );
+								} else {
+									if ( created ) {
+										console.log( 'Created Inventory for ' + instance.itemSku + ' at Store ' + instance.storeNumber + '.' );
+										return findOrCreateCallback();
+									}
+
+									instance.updateAttributes(
+										{
+											quantity: inventoryToCreate.quantity
+										},
+										function updateInventoryQuantity( err, instance ) {
+											if ( err ) {
+												return findOrCreateCallback( err );
+											}
+											console.log( 'Updated Inventory for ' + instance.itemSku + ' at Store ' + instance.storeNumber + '.' );
+											return findOrCreateCallback();
+										}
+									);
+
+								}
+							}
+						);
+					},
+					itemSyncCallback
+				);
+
+			} );
+
+		},
+		syncCallback
+	);
 
 }
 
@@ -110,7 +200,8 @@ function syncItems( syncItemsCallback ) {
 async.waterfall(
 	[
 		syncStores,
-		syncItems
+		syncItems,
+		syncInventory
 	],
 	function finishedSync( err ) {
 		if ( err ) {
