@@ -209,5 +209,6 @@ async.waterfall(
 		} else {
 			console.log( 'Sync complete.' );
 		}
+		process.exit();
 	}
 );
