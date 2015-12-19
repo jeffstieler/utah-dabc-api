@@ -3,7 +3,7 @@ var	models = require('./server/server.js').models,
 	async = require('async');
 
 var	allStores = {},
-	allItems = {};
+	allItems = [];
 
 function syncStores( syncCallback ) {
 
@@ -42,8 +42,8 @@ function syncStores( syncCallback ) {
 						if ( err ) {
 							return findOrCreateCallback( err );
 						} else {
-							// cache the instance
-							allStores[ instance.number ] = instance;
+							// cache the store number
+							allStores[ instance.number ] = true;
 
 							if ( created ) {
 								console.log( 'Created Store ' + instance.number + '.' );
@@ -95,8 +95,8 @@ function syncItems( syncCallback ) {
 						if ( err ) {
 							return findOrCreateCallback( err );
 						} else {
-							// cache the instance
-							allItems[ instance.sku ] = instance;
+							// cache the item sku
+							allItems.push( instance.sku );
 
 							if ( created ) {
 								console.log( 'Created Item ' + instance.sku + '.' );
@@ -121,9 +121,9 @@ function syncInventory( syncCallback ) {
 	async.eachLimit(
 		allItems,
 		5,
-		function syncItemInventory( item, itemSyncCallback ) {
+		function syncItemInventory( itemSku, itemSyncCallback ) {
 
-			DABC.getBeerInventory( item.sku, function( err, inventory ) {
+			DABC.getBeerInventory( itemSku, function( err, inventory ) {
 
 				if ( err ) {
 					return itemSyncCallback( err );
@@ -140,7 +140,7 @@ function syncInventory( syncCallback ) {
 						}
 
 						var inventoryToCreate = {
-							itemSku: item.sku,
+							itemSku: itemSku,
 							storeNumber: storeNumber,
 							quantity: store.qty
 						};
@@ -150,7 +150,7 @@ function syncInventory( syncCallback ) {
 								where: {
 									and: [
 										{
-											itemSku: item.sku
+											itemSku: itemSku
 										},
 										{
 											storeNumber: storeNumber
