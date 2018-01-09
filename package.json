@@ -10,6 +10,8 @@
     "cheerio": "^0.19.0",
     "config": "^1.29.0",
     "dotenv": "^1.1.0",
+    "lodash": "^4.17.4",
+    "node-untappd": "^0.4.1",
     "promise-pool-executor": "^1.1.0",
     "request": "^2.55.0",
     "restify": "^3.0.1",
