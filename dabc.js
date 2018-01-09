@@ -3,8 +3,8 @@ var	request = require('request'),
 	_ = require('underscore'),
 	async = require('async');
 
-var	URL_BASE               = 'http://www.webapps.abc.utah.gov/Production',
-	BEER_LIST_URL          = '/OnlinePriceList/DisplayPriceList.aspx?DivCd=T',
+var	URL_BASE               = 'https://webapps2.abc.utah.gov/Production',
+	BEER_LIST_URL          = '/OnlinePriceList/DisplayPriceList.aspx',
 	SPECIAL_ORDER_LIST_URL = '/OnlinePriceList/DisplayPriceList.aspx?ClassCd=YST',
 	INVENTORY_URL          = '/OnlineInventoryQuery/IQ/InventoryQuery.aspx',
 	STORE_MAP_URL          = 'http://abc.utah.gov/common/script/abcMap.js';
@@ -25,7 +25,7 @@ function parseBeerTable( html ) {
 	var inventory = [],
 		$ = cheerio.load( html );
 
-	$( '#ctl00_ContentPlaceHolderBody_gvPricelist > tr' ).each( function( idx, row ) {
+	$( '#ContentPlaceHolderBody_GridViewItem > tr' ).each( function( idx, row ) {
 
 		var $cols = $( row ).find( 'td' );
 
@@ -37,13 +37,19 @@ function parseBeerTable( html ) {
 
 				if ( idx in colMap ) {
 
-					beer[ colMap[ idx ] ] = $( td ).text();
+					beer[ colMap[ idx ] ] = $( td ).text().trim();
 
 				}
 
 			} );
 
-			inventory.push( beer );
+			if ( 'T' == beer.div || 'YST' == beer.cat ) {
+
+				beer.description = beer.description.replace( /\d+\s?ml$/, '' ).trim();
+
+				inventory.push( beer );
+
+			}
 
 		}
 
