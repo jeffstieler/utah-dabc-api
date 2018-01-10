@@ -26,7 +26,10 @@ const searchUntappd = ( beerName ) => new Promise( ( resolve, reject ) => {
             if ( err ) {
                 reject( err );
             } else {
-                // TODO: 'invalid_limit' == response.meta.error_type
+                if ( 'invalid_limit' == _.get( response, 'meta.error_type' ) ) {
+                    console.log( '***** Hit Untappd Rate Limit *****' );
+                }
+
                 resolve( _.get( response, 'response.beers.items', [] ) );
             }
         },
