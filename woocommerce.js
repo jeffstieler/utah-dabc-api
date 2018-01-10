@@ -170,17 +170,16 @@ const addNewBeer = ( beerToCreate ) => {
             }
 
             return Promise.all( tasks ).then( taskResults => {
-
                 if ( 2 == taskResults.length ) {
                     beerProductData.categories = [
                         {
-                            id: tasks[0].id,
+                            id: taskResults[0].id,
                         },
                     ];
 
                     beerProductData.tags = [
                         {
-                            id: tasks[1].id,
+                            id: taskResults[1].id,
                         },
                     ];
                 }
