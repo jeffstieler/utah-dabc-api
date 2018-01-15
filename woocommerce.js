@@ -16,18 +16,26 @@ const WooCommerce = new WooCommerceAPI( {
     version: 'wc/v2',
 } );
 
+const untappdAccessTokens = config.get( 'untappd.tokens' );
+let untappdAccessTokenIdx = 0;
+
 const Untappd = new UntappdClient();
-Untappd.setClientId( config.get( 'untappd.id' ) );
-Untappd.setClientSecret( config.get( 'untappd.secret' ) );
+
+const rotateUntappdToken = () => {
+    const nextIdx = untappdAccessTokenIdx++ % untappdAccessTokens.length;
+    Untappd.setAccessToken( untappdAccessTokens[ nextIdx ] );
+};
 
 const searchUntappd = ( beerName ) => new Promise( ( resolve, reject ) => {
+    rotateUntappdToken();
     Untappd.beerSearch(
         ( err, response ) => {
             if ( err ) {
                 reject( err );
             } else {
                 if ( 'invalid_limit' == _.get( response, 'meta.error_type' ) ) {
-                    console.log( '***** Hit Untappd Rate Limit *****' );
+                    console.error( '***** Hit Untappd Rate Limit *****' );
+                    process.exit( 0 );
                 }
 
                 resolve( _.get( response, 'response.beers.items', [] ) );
