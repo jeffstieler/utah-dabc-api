@@ -47,6 +47,26 @@ const searchUntappd = ( beerName ) => new Promise( ( resolve, reject ) => {
         } );
 } );
 
+const getUntappdBeer = ( untappdId ) => new Promise( ( resolve, reject ) => {
+    rotateUntappdToken();
+    Untappd.beerInfo(
+        ( err, response ) => {
+            if ( err ) {
+                reject( err );
+            } else {
+                if ( 'invalid_limit' == _.get( response, 'meta.error_type' ) ) {
+                    console.error( '***** Hit Untappd Rate Limit *****' );
+                    process.exit( 0 );
+                }
+
+                resolve( _.get( response, 'response.beer', {} ) );
+            }
+        },
+        {
+            BID: untappdId,
+        } );
+} );
+
 const createProduct = ( product ) => new Promise( ( resolve, reject ) => {
     WooCommerce.post(
         'products',
@@ -55,7 +75,37 @@ const createProduct = ( product ) => new Promise( ( resolve, reject ) => {
             if ( err ) {
                 reject( err );
             } else {
-                resolve( JSON.parse( body ) );
+                try {
+                    const json = JSON.parse( body );
+
+                    resolve( json );
+                } catch ( syntaxError ) {
+                    console.error( body );
+
+                    reject( syntaxError );
+                }
+            }
+        }
+    );
+} );
+
+const updateProduct = ( product ) => new Promise( ( resolve, reject ) => {
+    WooCommerce.put(
+        'products/' + product.id,
+        product,
+        ( err, res, body ) => {
+            if ( err ) {
+                reject( err );
+            } else {
+                try {
+                    const json = JSON.parse( body );
+
+                    resolve( json );
+                } catch ( syntaxError ) {
+                    console.error( body );
+
+                    reject( syntaxError );
+                }
             }
         }
     );
@@ -124,6 +174,72 @@ const findOrCreateCategory = ( categoryName, categoryImage ) => new Promise( ( r
     );
 } );
 
+const mapUntappdBeerToProduct = ( beerProduct, untappdBeer ) => {
+    let tasks = [];
+
+    // Add product category for brewery
+    tasks.push( findOrCreateCategory(
+        untappdBeer.brewery.brewery_name,
+        untappdBeer.brewery.brewery_label,
+    ) );
+
+    // Add product tag for style
+    tasks.push( findOrCreateTag( _.get( untappdBeer, 'beer.beer_style', _.get( untappdBeer, 'beer_style' ) ) ) );
+
+    beerProduct.short_description = beerProduct.name;
+    beerProduct.name = _.get( untappdBeer, 'beer.beer_name', _.get( untappdBeer, 'beer_name' ) );
+    beerProduct.slug = _.get( untappdBeer, 'beer.beer_slug', _.get( untappdBeer, 'beer_slug' ) );
+    beerProduct.description = _.get( untappdBeer, 'beer.beer_description', _.get( untappdBeer, 'beer_description' ) );
+
+    const abv = _.get( untappdBeer, 'beer.beer_abv', _.get( untappdBeer, 'beer_abv' ) );
+    const ibu = _.get( untappdBeer, 'beer.beer_ibu', _.get( untappdBeer, 'beer_ibu' ) );
+
+    // Add IBU, ABV as attributes
+    beerProduct.attributes.push(
+        {
+            name: 'ABV',
+            slug: 'pa_abv',
+            options: [ abv.toString() ],
+        },
+        {
+            name: 'IBU',
+            slug: 'pa_ibu',
+            options: [ ibu.toString() ],
+        }
+    );
+
+    beerProduct.images = [
+        {
+            src: _.get( untappdBeer, 'beer.beer_label', _.get( untappdBeer, 'beer_label' ) ),
+            position: 0,
+        },
+    ];
+
+    // Add untapped ID as meta
+    beerProduct.meta_data = [
+        {
+            key: 'untappd_id',
+            value: _.get( untappdBeer, 'beer.bid', _.get( untappdBeer, 'bid' ) ),
+        },
+    ];
+
+    return Promise.all( tasks ).then( taskResults => {
+        beerProduct.categories = [
+            {
+                id: taskResults[0].id,
+            },
+        ];
+
+        beerProduct.tags = [
+            {
+                id: taskResults[1].id,
+            },
+        ];
+
+        return beerProduct;
+    } );
+};
+
 const addNewBeer = ( beerToCreate ) => {
     const beerProductData = {
         name: beerToCreate.description,
@@ -143,76 +259,25 @@ const addNewBeer = ( beerToCreate ) => {
 
     return searchUntappd( beerToCreate.description )
         .then( searchResults => {
-            let tasks = [];
-
-            // if beers found:
-            // - add product category for brewery
-            // - add IBU, ABV as attributes
-            // - add product tag for style
-            // - add untapped ID as meta
             if ( searchResults.length ) {
                 console.log( `Found '${searchResults[0].beer.beer_name}' on Untappd.` );
-                console.log( `Creating brewery category: '${searchResults[0].brewery.brewery_name}'` );
-                console.log( `Creating beer style tag: '${searchResults[0].beer.beer_style}'` );
-
-                tasks.push( findOrCreateCategory(
-                    searchResults[0].brewery.brewery_name,
-                    searchResults[0].brewery.brewery_label,
-                ) );
-                tasks.push( findOrCreateTag( searchResults[0].beer.beer_style ) );
-
-                beerProductData.name = searchResults[0].beer.beer_name;
-                beerProductData.slug = searchResults[0].beer.beer_slug;
-                beerProductData.description = searchResults[0].beer.beer_description;
-                beerProductData.short_description = beerToCreate.description;
-                
-                beerProductData.attributes.push(
-                    {
-                        name: 'ABV',
-                        slug: 'pa_abv',
-                        options: [ searchResults[0].beer.beer_abv.toString() ],
-                    },
-                    {
-                        name: 'IBU',
-                        slug: 'pa_ibu',
-                        options: [ searchResults[0].beer.beer_ibu.toString() ],
-                    }
-                );
-
-                beerProductData.images = [
-                    {
-                        src: searchResults[0].beer.beer_label,
-                        position: 0,
-                    },
-                ];
-
-                beerProductData.meta_data = [
-                    {
-                        key: 'untappd_id',
-                        value: searchResults[0].beer.bid,
-                    },
-                ];
-            }
-
-            return Promise.all( tasks ).then( taskResults => {
-                if ( 2 == taskResults.length ) {
-                    beerProductData.categories = [
-                        {
-                            id: taskResults[0].id,
-                        },
-                    ];
-
-                    beerProductData.tags = [
-                        {
-                            id: taskResults[1].id,
-                        },
-                    ];
-                }
-
                 console.log( `Creating product for: '${beerProductData.name}'` );
-                return createProduct( beerProductData );
-            } );
+
+                return mapUntappdBeerToProduct( beerProductData, searchResults[0] )
+                    .then( createProduct );
+            }
         } );
+};
+
+const updateBeerFromUntappd = ( beerProduct ) => {
+    console.log( 'Updating ' + beerProduct.name + ' with Untappd data.' );
+
+    const untappdMeta = _.find( beerProduct.meta_data, { key: 'untappd_id' } );
+    const untappdId = untappdMeta.value;
+
+    return getUntappdBeer( untappdId )
+        .then( untappdBeer => mapUntappdBeerToProduct( beerProduct, untappdBeer ) )
+        .then( updateProduct );
 };
 
 const getBeerBySKU = ( sku ) => new Promise( ( resolve, reject ) => {
@@ -222,7 +287,15 @@ const getBeerBySKU = ( sku ) => new Promise( ( resolve, reject ) => {
             if ( err ) {
                 reject( err );
             } else {
-                resolve( JSON.parse( body ) );
+                try {
+                    const json = JSON.parse( body );
+
+                    resolve( json );
+                } catch ( syntaxError ) {
+                    console.error( body );
+
+                    reject( syntaxError );
+                }
             }
         }
     );
@@ -245,6 +318,12 @@ DABC.getAllBeers( function( err, beers ) {
                     if ( 0 === results.length ) {
                         return addNewBeer( beer );
                     } else {
+                        const untappdId = _.find( results[0].meta_data, { key: 'untappd_id' } );
+
+                        if ( untappdId && '' == results[0].short_description ) {
+                            return updateBeerFromUntappd( results[0] );
+                        }
+
                         console.log( results[0].name + ' already exists.' );
                         return results[0];
                     }
