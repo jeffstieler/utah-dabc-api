@@ -62,6 +62,7 @@ const createProduct = ( product ) => new Promise( ( resolve, reject ) => {
 } );
 
 const findOrCreateTag = ( tagName ) => new Promise( ( resolve, reject ) => {
+    console.log( `Creating tag: '${tagName}'` );
     WooCommerce.post(
         'products/tags',
         {
@@ -71,20 +72,27 @@ const findOrCreateTag = ( tagName ) => new Promise( ( resolve, reject ) => {
             if ( err ) {
                 reject( err );
             } else {
-                const result = JSON.parse( body );
+                try {
+                    const result = JSON.parse( body );
 
-                // If the tag exists, return the existing id
-                if ( 'term_exists' == result.code && result.data.resource_id ) {
-                    resolve( { id: result.data.resource_id } );
+                    // If the tag exists, return the existing id
+                    if ( 'term_exists' == result.code && result.data.resource_id ) {
+                        resolve( { id: result.data.resource_id } );
+                    }
+
+                    resolve( result );
+                } catch ( syntaxError ) {
+                    console.error( body );
+
+                    reject( syntaxError );
                 }
-
-                resolve( result );
             }
         }
     );
 } );
 
 const findOrCreateCategory = ( categoryName, categoryImage ) => new Promise( ( resolve, reject ) => {
+    console.log( `Creating category: '${categoryName}'` );
     WooCommerce.post(
         'products/categories',
         {
@@ -97,14 +105,20 @@ const findOrCreateCategory = ( categoryName, categoryImage ) => new Promise( ( r
             if ( err ) {
                 reject( err );
             } else {
-                const result = JSON.parse( body );
+                try {
+                    const result = JSON.parse( body );
 
-                // If the category exists, return the existing id
-                if ( 'term_exists' == result.code && result.data.resource_id ) {
-                    resolve( { id: result.data.resource_id } );
+                    // If the category exists, return the existing id
+                    if ( 'term_exists' == result.code && result.data.resource_id ) {
+                        resolve( { id: result.data.resource_id } );
+                    }
+
+                    resolve( result );
+                } catch ( syntaxError ) {
+                    console.error( body );
+
+                    reject( syntaxError );
                 }
-
-                resolve( result );
             }
         }
     );
